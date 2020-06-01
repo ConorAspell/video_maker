@@ -18,14 +18,13 @@ def lambda_handler(event, context):
     }
     response = requests.get(url, headers=headers, timeout=10)
       
-    test = json.loads(response.content)
+    response_json = json.loads(response.content)
     today = datetime.now().strftime("%d_%m_%Y")
     clips=[] 
-    for item in test['clips']:
+    for item in response_json['clips']:
         temp = item['thumbnails']['medium']
         slug='-'.join(temp.split('-')[:-2])+".mp4"
         clips.append(slug)
-
 
     for clip in clips:
         r=requests.get(clip)
