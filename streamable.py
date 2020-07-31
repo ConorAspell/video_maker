@@ -23,6 +23,7 @@ def get_videos():
     response = requests.get(url, headers=headers, timeout=10)
     clips=[]    
     places=[]   
+    titles=[]
     test = json.loads(response.content)
     print(test)
     today = datetime.now().strftime("%d_%m_%Y")
@@ -30,11 +31,12 @@ def get_videos():
     duration = 0
     for item in test['clips']:
         duration += item['duration']
-        if duration > 530:
+        if duration > 125:
             break
         temp = item['thumbnails']['medium']
         temp2='-'.join(temp.split('-')[:-2])+".mp4"
         clips.append(temp2)
+        titles.append(item['title'])
     for clip in clips:
         r=requests.get(clip)
         key=clip.split('/')[-1]
@@ -42,20 +44,41 @@ def get_videos():
         with open(place, 'wb') as f:
             f.write(r.content)
         places.append(place)
-    return places
+    return places, titles
 
-def edit_video(paths):
+def transform(intro, paths, titles):
     clips=[]
-    #final = VideoFileClip(intro)
-    for path in paths:
-        clips.append(VideoFileClip(path))
-    final = VideoFileClip("intro.mp4")
+    final = VideoFileClip(intro)
+    for i in range(0, len(paths)):
+
+        clip = VideoFileClip(paths[i])
+
+        clips.append(clip)
     for clip in clips:
         clip.resize((460, 720))
-        final = concatenate_videoclips([final, clip], method='compose')
+        final = concatenate_videoclips([final, clip])
+        clip.close()
+    today = datetime.now().strftime("%d_%m_%Y")
+    save_location = "top_clips_" + today + ".mp4"
+    final.write_videofile(save_location, temp_audiofile='temp-audio.m4a', remove_temp=True, codec="libx264", audio_codec="aac") 
+    if os.path.getsize(save_location) > 1000000000:
+        del paths[-1]
+        edit_video(paths)
+    return save_location
+
+
+def edit_video(paths, titles):
+    clips=[VideoFileClip("intro.mp4")]
+    for i in range(0, len(paths)):
+        clip = VideoFileClip(paths[i])
+        clip.resize((460, 720))
+        
+        clips.append(clip)
+    final = concatenate_videoclips(clips, method='compose')
+        
     today = datetime.now().strftime("%M_%H_%d_%m_%Y")
     save_location = "top_clips_" + today + ".mp4"
-    final.write_videofile(save_location, fps=24) 
+    final.write_videofile(save_location, temp_audiofile='temp-audio.m4a', remove_temp=True, codec="libx264", audio_codec="aac", fps=24,logger=None, threads=4)
     if os.path.getsize(save_location) > 1000000000:
         del paths[-1]
         edit_video(paths)
@@ -104,9 +127,18 @@ def upload_to_reddit(url='https://streamable.com/6ws17r'):
 # export reddit_secret=OSxpjcizyXRovExi9VZ_y2n6Ihc
 # export subreddit=leagueoflegends
 
+# number_of_videos=3
+# game="League%20of%20Legends"
+# twitch_id="022i90v7stu8i3u71otlf5xxa6w8si"
+# username="concueta"
+# password="4562433Ss"
+# subreddit="leagueoflegends"
+# reddit_id="ps2XmeHmNwaP2g"
+# reddit_secret="OSxpjcizyXRovExi9VZ_y2n6Ihc"
+# subreddit="leagueoflegends"
+if '__name__' == '__main__':
+    places, titles=get_videos()
+    filename=edit_video(places, titles)
 
-# places=get_videos()
-filename=edit_video(['AT-cm%7C711692229.mp4', 'AT-cm%7C713532655.mp4'])
-url = upload_to_streamable(filename)
-upload_to_reddit(url)
-print(filename)
+    url = upload_to_streamable(filename)
+    upload_to_reddit(url)
