@@ -17,6 +17,6 @@ requests==2.23.0
 six==1.14.0
 tqdm==4.46.0
 update-checker==0.17
-urllib3==1.25.9
+urllib3==1.26.5
 websocket-client==0.57.0
 zope.interface==5.1.0
